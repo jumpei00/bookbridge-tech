@@ -1,30 +1,40 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { allPosts } from "content-collections";
+import { PostCard } from "@/components/posts";
 
 export const Route = createFileRoute("/posts/")({
-	component: Posts,
+  component: Posts,
 });
 
 function Posts() {
-	return (
-		<main>
-			<h2 className="text-center text-2xl mt-8">Blog</h2>
-			<ul className="list-none p-0">
-				{allPosts.map((post) => {
-					return (
-						<li key={post._meta.path} className="text-center mt-8">
-							<Link
-								to="/posts/$path"
-								params={{ path: post._meta.path }}
-								className="no-underline hover:opacity-70"
-							>
-								<h3 className="text-lg m-0">{post.title}</h3>
-								<span className="text-sm text-gray-600">{post.date}</span>
-							</Link>
-						</li>
-					);
-				})}
-			</ul>
-		</main>
-	);
+  return (
+    <main className="section py-16">
+      <div className="container-narrow">
+        <h1 className="section-title">Blog</h1>
+        <p className="text-center text-(--color-text-secondary) mb-12 animate-fade-in">
+          技術記事や日々の学びを発信しています
+        </p>
+
+        <div className="grid gap-4">
+          {allPosts.map((post, index) => (
+            <PostCard
+              key={post._meta.path}
+              path={post._meta.path}
+              title={post.title}
+              date={post.date}
+              index={index}
+            />
+          ))}
+        </div>
+
+        {allPosts.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-(--color-text-secondary)">
+              まだ記事がありません
+            </p>
+          </div>
+        )}
+      </div>
+    </main>
+  );
 }
