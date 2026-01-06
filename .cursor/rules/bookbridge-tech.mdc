@@ -1,0 +1,267 @@
+---
+description: BookBridge Tech プロジェクトの開発ルール
+globs:
+alwaysApply: true
+---
+
+# BookBridge Tech - Cursor Rules
+
+このファイルはAI開発支援のためのプロジェクトルールを定義します。
+
+## プロジェクト概要
+
+- **名称**: BookBridge Tech
+- **種類**: 個人ポートフォリオサイト
+- **フレームワーク**: TanStack Start (React 19 SSR)
+- **ホスティング**: Cloudflare Workers
+
+## 技術スタック
+
+| カテゴリ | 技術 | バージョン |
+|---------|------|-----------|
+| フレームワーク | TanStack Start | ^1.132.0 |
+| UI | React | ^19.2.0 |
+| スタイリング | Tailwind CSS | v4 |
+| コンテンツ | Content Collections | ^0.13.0 |
+| Linter/Formatter | Biome | 2.3.10 |
+| テスト | Vitest | ^3.0.5 |
+| ランタイム | Cloudflare Workers | wrangler ^4.54.0 |
+
+---
+
+## アーキテクチャ
+
+### ディレクトリ構成
+
+```
+src/
+├── components/           # React コンポーネント
+│   ├── common/           # Header, NotFound など共通UI
+│   ├── home/             # ホームページ専用
+│   ├── posts/            # ブログ機能
+│   ├── profile/          # プロフィールページ
+│   └── study/            # 読書リスト
+├── routes/               # ファイルベースルーティング
+│   ├── __root.tsx        # ルートレイアウト
+│   ├── index.tsx         # / (ホーム)
+│   ├── profile/          # /profile
+│   ├── posts/            # /posts, /posts/$path
+│   └── study/            # /study
+└── styles.css            # グローバルCSS
+
+contents/                 # Markdown コンテンツ
+├── posts/                # ブログ記事
+├── profile/              # プロフィールデータ
+└── study/                # 読書リスト
+```
+
+### コンポーネント設計原則
+
+1. **ページ単位でディレクトリを分割**
+   - `components/home/`, `components/profile/` など
+   - 各ディレクトリにバレルファイル (`index.ts`) を配置
+
+2. **バレルエクスポート**
+   ```typescript
+   // components/profile/index.ts
+   export { HeroSection } from "./HeroSection";
+   export { SkillsSection } from "./SkillsSection";
+   export { CareerSection } from "./CareerSection";
+   export { CertificationsSection } from "./CertificationsSection";
+   ```
+
+3. **インポートは `@/` エイリアスを使用**
+   ```typescript
+   import { HeroSection, SkillsSection } from "@/components/profile";
+   ```
+
+4. **Props は型定義を明示**
+   ```typescript
+   type SkillsSectionProps = {
+     skills: Array<{ name: string; years: string; level: number }>;
+   };
+
+   export function SkillsSection({ skills }: SkillsSectionProps) { ... }
+   ```
+
+---
+
+## スタイリング規約
+
+### CSS 変数 (src/styles.css)
+
+```css
+:root {
+  --color-background: #fafafa;
+  --color-surface: #ffffff;
+  --color-border: #e5e7eb;
+  --color-text-primary: #1f2937;
+  --color-text-secondary: #6b7280;
+  --color-accent: #3b82f6;
+  --color-accent-light: #eff6ff;
+}
+```
+
+### Tailwind CSS v4 の書き方
+
+```tsx
+// CSS変数を参照する場合
+<p className="text-(--color-text-secondary)">...</p>
+<div className="bg-(--color-accent-light)">...</div>
+
+// NG: 古い書き方
+<p className="text-(--color-text-secondary)">...</p>
+```
+
+### カスタムクラス
+
+| クラス | 用途 |
+|--------|------|
+| `.card` | ホバーでシャドウが強くなるカード |
+| `.card-flat` | フラットなカード（ボーダーのみ） |
+| `.btn` `.btn-primary` `.btn-outline` | ボタンスタイル |
+| `.section` `.section-title` | セクション区切り |
+| `.skill-bar` `.skill-bar-fill` | スキルバー |
+| `.timeline` `.timeline-item` | タイムライン |
+| `.social-icon` | SNSリンクアイコン |
+| `.prose` | Markdown HTML 用スタイル |
+| `.container` `.container-narrow` | コンテナ幅 |
+
+### アニメーション
+
+| クラス | 効果 |
+|--------|------|
+| `.animate-fade-in` | フェードイン + 上方向移動 |
+| `.animate-slide-up` | スライドアップ |
+| `.animate-scale-in` | スケールイン |
+| `.delay-100` ~ `.delay-500` | アニメーション遅延 |
+
+---
+
+## Content Collections
+
+### 設定ファイル
+
+`content-collections.ts` で Zod スキーマを定義。
+
+### コレクション一覧
+
+| コレクション | ディレクトリ | エクスポート |
+|-------------|-------------|-------------|
+| profile | `contents/profile/` | `allProfiles` |
+| posts | `contents/posts/` | `allPosts` |
+| books | `contents/study/` | `allBooks` |
+
+### スキーマ例
+
+```typescript
+// Profile スキーマ
+const profileSchema = z.object({
+  name: z.string(),
+  nameJa: z.string(),
+  job: z.string(),
+  workplace: z.string(),
+  workplaceUrl: z.string(),
+  location: z.string(),
+  birthplace: z.string(),
+  bio: z.string(),
+  skills: z.array(z.object({
+    name: z.string(),
+    years: z.string(),
+    level: z.number(),  // 0-100 のパーセンテージ
+  })),
+  careers: z.array(z.object({
+    period: z.string(),
+    title: z.string(),
+    description: z.string(),
+  })),
+  certifications: z.array(z.object({
+    period: z.string(),
+    name: z.string(),
+    url: z.string(),
+  })),
+});
+```
+
+### Markdown front-matter 形式
+
+```yaml
+---
+name: Jumpei Motohashi
+nameJa: 本橋 諄平
+job: Software Engineer
+skills:
+  - name: Go
+    years: "2 years"
+    level: 60
+careers:
+  - period: "2022/4 ~"
+    title: 株式会社ビズヒント
+    description: バックエンド開発
+---
+```
+
+### Markdown 処理
+
+- **remark-gfm**: GitHub Flavored Markdown (テーブル、チェックリスト)
+- **@shikijs/rehype**: コードブロックのシンタックスハイライト (theme: github-light)
+
+---
+
+## コーディングスタイル
+
+### Biome 設定
+
+- インデント: タブ
+- セミコロン: なし
+- クォート: ダブルクォート
+- インポート順序: 自動ソート
+
+### TypeScript
+
+- strict モード有効
+- `@/` パスエイリアス使用
+- Props は明示的な型定義
+
+### コンポーネント命名
+
+- ファイル名: PascalCase (`HeroSection.tsx`)
+- コンポーネント名: PascalCase (`export function HeroSection()`)
+- セクション系: `*Section` サフィックス
+- カード系: `*Card` サフィックス
+
+---
+
+## デプロイ
+
+### GitHub Actions
+
+- `main` ブランチ push で自動デプロイ
+- pnpm + Node.js 20
+- `pnpm run deploy` = `vite build && wrangler deploy`
+
+### 環境変数
+
+| 変数 | 用途 |
+|------|------|
+| `CLOUDFLARE_API_TOKEN` | Wrangler 認証 |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare アカウント |
+
+---
+
+## 開発時の注意点
+
+1. **新しいページを追加する場合**
+   - `src/routes/` にルートファイルを作成
+   - 対応する `src/components/{page}/` ディレクトリを作成
+   - バレルファイル (`index.ts`) を忘れずに作成
+
+2. **コンテンツを追加する場合**
+   - `contents/` に Markdown ファイルを追加
+   - スキーマに沿った front-matter を記述
+   - `content-collections.ts` のスキーマを必要に応じて更新
+
+3. **スタイルを追加する場合**
+   - CSS 変数は `:root` に定義
+   - カスタムクラスは `src/styles.css` に追加
+   - Tailwind v4 構文 `text-(--var-name)` を使用
