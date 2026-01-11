@@ -7,7 +7,7 @@ export function RepositorySection() {
           This site is running on Cloudflare Workers with TanStack Start.
         </p>
         <a
-          href="https://github.com/jumpei00/bookbridge"
+          href="https://github.com/jumpei00/bookbridge-tech"
           target="_blank"
           rel="noopener"
           className="btn btn-outline animate-fade-in delay-100"
